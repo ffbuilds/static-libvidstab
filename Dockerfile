@@ -6,9 +6,10 @@ ARG VIDSTAB_VERSION=1.1.0
 ARG VIDSTAB_URL="https://github.com/georgmartius/vid.stab/archive/v$VIDSTAB_VERSION.tar.gz"
 ARG VIDSTAB_SHA256=14d2a053e56edad4f397be0cb3ef8eb1ec3150404ce99a426c4eb641861dc0bb
 
-# bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
-# bump: alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
-FROM alpine:3.16.2 AS base
+# Must be specified
+ARG ALPINE_VERSION
+
+FROM alpine:${ALPINE_VERSION} AS base
 
 FROM base AS download
 ARG VIDSTAB_URL
@@ -30,7 +31,7 @@ COPY --from=download /tmp/vidstab/ /tmp/vidstab/
 WORKDIR /tmp/vidstab/build
 RUN \
   apk add --no-cache --virtual build \
-    build-base cmake && \
+    build-base cmake pkgconf && \
   sed -i 's/include (FindSSE)/if(CMAKE_SYSTEM_ARCH MATCHES "amd64")\ninclude (FindSSE)\nendif()/' ../CMakeLists.txt && \
   cmake \
     -G"Unix Makefiles" \
@@ -42,6 +43,11 @@ RUN \
     .. && \
   make -j$(nproc) install && \
   echo "Libs.private: -ldl" >> /usr/local/lib/pkgconfig/vidstab.pc && \
+  # Sanity tests
+  pkg-config --exists --modversion --path vidstab && \
+  ar -t /usr/local/lib/libvidstab.a && \
+  readelf -h /usr/local/lib/libvidstab.a && \
+  # Cleanup
   apk del build
 
 FROM scratch
