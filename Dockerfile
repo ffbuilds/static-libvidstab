@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 
 # bump: vid.stab /VIDSTAB_VERSION=([\d.]+)/ https://github.com/georgmartius/vid.stab.git|*
 # bump: vid.stab after ./hashupdate Dockerfile VIDSTAB $LATEST
